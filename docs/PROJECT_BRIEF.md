@@ -1,0 +1,148 @@
+# Project Brief: Citi Bike Demand & Network Opportunity Analysis
+
+## Overview
+
+This project analyzes one month of NYC Citi Bike trip data to understand **where ridership demand is concentrated and imbalanced across the station network**, and **how member and casual riders differ** in their usage. The goal is to surface data-grounded signals that help Citi Bike decide where to invest in station capacity and how to think about its two rider segments.
+
+---
+
+## Stakeholder
+
+**Primary:** VP of Operations & Network Planning, Citi Bike (Lyft)
+
+This person owns capital-intensive, hard-to-reverse decisions — where to add stations, where to expand dock capacity, and how to allocate and rebalance bikes across the network. They need demand evidence to prioritize where the next investment goes.
+
+**Secondary:** Director of Membership & Growth
+
+This person owns the conversion funnel (turning casual riders into annual members). The rider-behavior layer of this analysis informs where and to whom conversion efforts could be targeted.
+
+---
+
+## Business Problem
+
+Citi Bike's station network has highly uneven demand. Some stations are oversubscribed — bikes run out or docks fill up at peak times, creating lost rides and rider frustration — while others are underused. The Operations team needs to know **where demand concentrates, where the network is directionally imbalanced, and where demand is high relative to a station's capacity**, so they can prioritize where to expand.
+
+A key analytical nuance shapes this work: **trip volume measures realized demand, not strain.** A busy station is not necessarily a problem if it already has the dock capacity to absorb that demand. To distinguish "busy but well-provisioned" from "busy relative to its size," this project normalizes demand against station capacity where possible. The trip data alone cannot reveal *unmet* demand (riders who found no bike or no open dock), so the analysis identifies **candidate** stations for capacity review rather than confirmed problem sites.
+
+Layered on top is a **rider-segment question**: members and casual riders behave differently, and understanding those differences informs both network planning (who is driving demand where) and membership conversion strategy.
+
+---
+
+## Core Business Questions
+
+**Primary (Operations / Growth):**
+> Where is ridership demand concentrated and imbalanced across the station network, and where is demand high relative to capacity — implying priority locations for expansion or rebalancing?
+
+**Secondary (Rider Behavior):**
+> How do member and casual riders differ in when, where, and how they ride, and what does that imply for demand patterns and conversion targeting?
+
+### Supporting sub-questions
+
+Network & demand:
+- Which stations have the highest trip volume (as origin, as destination, and total)?
+- Which station-to-station routes (corridors) are most popular?
+- Which stations show the greatest directional imbalance (net origins vs. net destinations)?
+- Where is demand highest **relative to dock capacity** (trips per dock)?
+- How does demand shift by hour of day and day of week?
+
+Rider behavior:
+- How do member vs. casual riders split overall and by station?
+- How do trip duration and timing patterns differ between the two groups (commuter vs. leisure signals)?
+- Which stations are "casual-heavy" (potential conversion-targeting locations)?
+- How does bike-type preference (classic vs. electric) differ by rider type?
+
+---
+
+## Key Metrics
+
+**Demand & network:**
+- Trips per station — as origin, as destination, and total
+- Net flow per station (departures − arrivals) — the imbalance signal
+- Top N station-to-station routes by trip count
+- **Trips per dock (demand-to-capacity ratio)** — headline normalized metric
+- Demand by hour-of-day and day-of-week, per station / zone
+- Trip volume by geographic area (lat/lng based)
+
+**Rider behavior:**
+- Trip count and share by rider type (member vs. casual)
+- Average / median trip duration by rider type
+- Trips by hour-of-day and day-of-week, split by rider type
+- Weekend vs. weekday ratio by rider type
+- Casual share of trips per station (casual-heavy station identification)
+- Electric vs. classic bike mix by rider type
+
+**Validation / integrity metrics:**
+- Total trips reconciled against known source total (~4.69M)
+- Network-wide departures ≈ arrivals (conservation check)
+- Net flows sum to ≈ zero across the network (conservation check)
+
+---
+
+## Conceptual Model
+
+The grain of the raw data is a **single trip**. Each trip carries a rider type, start/end timestamp, start/end station (id, name, lat/lng), and bike type.
+
+The analysis aggregates trips along three dimensions:
+- **Station** (the analytical spine): trips are rolled up by start station and by end station, then combined to compute net flow and joined to capacity for trips-per-dock.
+- **Time**: hour-of-day and day-of-week breakdowns reveal demand rhythms and directional rush-hour flows.
+- **Rider type**: every demand view can be split by member vs. casual.
+
+Station-pairs form a **route** dimension for corridor analysis. Station capacity (from a second data source) enables the demand-to-capacity normalization.
+
+---
+
+## Data Sources
+
+1. **Citi Bike trip data (loaded)** — June 2026 monthly trip CSVs from the official Citi Bike System Data release, loaded into BigQuery (`citibike_raw.trips`, ~4.69M rows). New-format schema: ride_id, rideable_type, started_at, ended_at, start/end station id & name, start/end lat/lng, member_casual. NYC trips only (Jersey City "JC" files excluded).
+
+2. **Citi Bike GBFS `station_information` feed (to be added)** — the live public feed at `https://gbfs.citibikenyc.com/gbfs/en/station_information.json`, providing each station's **capacity** (total docks), name, and coordinates. No authentication required. Used to compute the trips-per-dock ratio.
+
+---
+
+## Scope & Assumptions
+
+**In scope:**
+- One month of trip data (June 2026) as a demand snapshot.
+- Station-level demand, net-flow imbalance, route/corridor analysis.
+- Demand-to-capacity normalization using current station capacity.
+- Member vs. casual behavioral comparison across time, duration, location, and bike type.
+
+**Assumptions:**
+- Trip volume is treated as a proxy for demand.
+- Current station capacity (from the live feed) is a reasonable approximation of capacity during the June 2026 trip window; minor mismatches may exist where stations were resized or added.
+- Trips with missing station identifiers (~0.25% of rows) are excluded from station-level analyses but retained for time-based and rider-type analyses.
+- Rider behavior is inferred at the aggregate/station level, not per individual — the data is anonymized per-trip with no cross-trip rider tracking.
+
+**Limitations (stated honestly):**
+- The analysis identifies **candidate** demand hotspots and imbalances, not confirmed capacity strain.
+- *Unmet* demand (riders who found no available bike or no open dock) is invisible in trip data.
+- A single month cannot reveal seasonality; conclusions are snapshot-specific.
+
+---
+
+## Out of Scope
+
+- **Historical real-time dock availability** (how full/empty stations were during the data window). This would require continuously archiving the GBFS `station_status` feed over time — a separate data-engineering effort, not part of this project.
+- **Per-rider longitudinal tracking** (following an individual rider across trips) — not possible with anonymized per-trip data.
+- **Multi-month / seasonal trend analysis** — single-month snapshot only.
+- **Revenue, pricing, or cost modeling.**
+- **Predictive modeling / forecasting** — this project is descriptive and diagnostic, not predictive.
+- **Jersey City (JC) stations** — excluded to keep the scope to the NYC network.
+
+---
+
+## Validation Approach
+
+- Reconcile total trip count against the known source total (~4.69M rows).
+- Confirm the member/casual split is plausible (Citi Bike is heavily member-skewed).
+- Check duration distributions for invalid values (negative or implausibly long trips) and define handling.
+- Verify hour-of-day demand patterns match intuition (commute peaks).
+- Apply conservation checks: network-wide departures ≈ arrivals, and net flows sum to ≈ zero.
+- Face-validity check: top-demand stations should be recognizable major hubs.
+
+---
+
+## What This Project Informs
+
+- **Operations:** where to prioritize new stations, added dock capacity, and rebalancing effort — focused on stations with high demand relative to capacity and strong directional imbalance.
+- **Membership/Growth:** which stations and rider segments represent the strongest casual-to-member conversion opportunities.
