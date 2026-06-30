@@ -1,0 +1,16 @@
+# dbt artifacts
+target/
+dbt_packages/
+dbt_internal_packages/
+logs/
+
+# credentials & secrets — NEVER commit these
+.env
+*.json
+profiles.yml
+citibike-keyfile.json
+*-keyfile.json
+*.key
+
+# OS files
+.DS_Store

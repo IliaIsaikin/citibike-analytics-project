@@ -1,0 +1,17 @@
+name: citibike
+
+profile: citibike
+
+seed-paths: ["seeds"]
+model-paths: ["models"]
+macro-paths: ["macros"]
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  citibike:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

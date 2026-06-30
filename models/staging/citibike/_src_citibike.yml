@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: citibike
+    database: sincere-strata-500023-j8
+    schema: citibike_raw
+    tables:
+      - name: trips
