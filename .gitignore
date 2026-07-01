@@ -3,6 +3,7 @@ target/
 dbt_packages/
 dbt_internal_packages/
 logs/
+venv/
 
 # credentials & secrets — NEVER commit these
 .env
