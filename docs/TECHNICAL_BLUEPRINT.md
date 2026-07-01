@@ -224,7 +224,6 @@ A written deliverable translating the analysis into operational recommendations 
 
 ---
 
-## PHASE 7 — Scale Up + Job Targeting (optional, high-level sketch)
+## PHASE 7 — Scale Up
 
 - Backfill additional months (April/May+) — no model changes needed; load more data and re-run.
-- Tailor framing/README and application materials toward the target role (Data Analyst, Operations Planning).
