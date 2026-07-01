@@ -26,6 +26,9 @@ final as (
         day_of_week,
         is_weekend,
 
+        -- round trip flag
+        is_round_trip,
+
         -- measures
         trip_duration_minutes,
         trip_distance_km

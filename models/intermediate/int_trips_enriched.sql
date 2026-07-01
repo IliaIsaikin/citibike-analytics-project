@@ -29,6 +29,9 @@ enriched as (
         format_date('%A', date(started_at)) as day_of_week,
         extract(dayofweek from started_at) in (1, 7) as is_weekend,
 
+        -- round trip: started and ended at the same station
+        start_station_id = end_station_id as is_round_trip,
+
         -- straight-line distance between start and end (descriptive feature)
         {{ dbt_utils.haversine_distance(
             'start_lat', 'start_lng',
