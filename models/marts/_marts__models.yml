@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: fct_trips
+    description: >
+      Clean trip-grain fact table, one row per valid trip. Reads from
+      int_trips_enriched (cleanup already applied). Holds measures and
+      foreign keys to dim_stations.
+    columns:
+      - name: ride_id
+        description: Primary key — unique trip identifier.
+        tests:
+          - unique
+          - not_null
+      - name: start_station_id
+        description: Foreign key to dim_stations (trip origin). Null for dockless starts.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_stations')
+                field: station_id
+      - name: end_station_id
+        description: Foreign key to dim_stations (trip destination). Null for dockless ends.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_stations')
+                field: station_id
+      - name: user_type
+        description: Rider type — member or casual.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['member', 'casual']
+      - name: trip_duration_minutes
+        description: Trip length in minutes. Cleaned to the range [1, 120).
+        tests:
+          - not_null
+
+  - name: dim_stations
+    description: >
+      Station dimension, one row per unique station. Built from distinct
+      start and end stations across all trips, with representative name and
+      coordinates.
+    columns:
+      - name: station_id
+        description: Primary key — unique station identifier.
+        tests:
+          - unique
+          - not_null
+      - name: station_name
+        description: Representative station name.
+        tests:
+          - not_null

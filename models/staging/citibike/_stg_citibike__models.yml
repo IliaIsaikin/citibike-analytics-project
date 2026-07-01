@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: stg_citibike__trips
+    description: >
+      Cleaned and typed Citi Bike trip data, one row per trip. Casts raw
+      string columns to proper types and computes trip duration. Keeps all
+      rows (no filtering) — cleanup happens downstream in int_trips_enriched.
+    columns:
+      - name: ride_id
+        description: Unique identifier for each trip.
+        tests:
+          - unique
+          - not_null
+      - name: user_type
+        description: Rider type — member (annual) or casual (single/day-pass).
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['member', 'casual']
+      - name: rideable_type
+        description: Bike type — classic_bike or electric_bike.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['classic_bike', 'electric_bike']
+      - name: started_at
+        description: Trip start timestamp.
+        tests:
+          - not_null
+      - name: ended_at
+        description: Trip end timestamp.
+        tests:
+          - not_null
