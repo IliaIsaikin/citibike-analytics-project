@@ -2,7 +2,9 @@
 
 ## Overview
 
-This project analyzes one month of NYC Citi Bike trip data to understand **where ridership demand is concentrated and imbalanced across the station network**, and **how member and casual riders differ** in their usage. The goal is to surface data-grounded signals that help Citi Bike decide where to invest in station capacity and how to think about its two rider segments.
+This project analyzes NYC Citi Bike trip data to **diagnose network performance** — understanding **where ridership demand is concentrated and imbalanced across the station network**, where demand runs high relative to capacity, and **how member and casual riders differ** in their usage. The goal is to surface data-grounded signals and operational recommendations that help Citi Bike decide where to invest in station capacity, where to focus rebalancing effort, and how to think about its two rider segments.
+
+The project is built as a scalable, maintainable analytics framework (modular dbt models, tested transformations, a reporting layer, and a written findings deliverable) rather than a one-off analysis — reflecting how a performance-diagnosis pipeline would be built and maintained in practice.
 
 ---
 
@@ -109,14 +111,21 @@ Station-pairs form a **route** dimension for corridor analysis. Station capacity
 
 **Assumptions:**
 - Trip volume is treated as a proxy for demand.
-- Current station capacity (from the live feed) is a reasonable approximation of capacity during the June 2026 trip window; minor mismatches may exist where stations were resized or added.
+- Current station capacity (from the live feed) is a reasonable approximation of capacity during the trip window; minor mismatches may exist where stations were resized or added.
 - Trips with missing station identifiers (~0.25% of rows) are excluded from station-level analyses but retained for time-based and rider-type analyses.
 - Rider behavior is inferred at the aggregate/station level, not per individual — the data is anonymized per-trip with no cross-trip rider tracking.
+
+**Trip-validity cleanup (applied in the fact layer, not staging):**
+- **Negative durations excluded** — physically impossible (end before start). Duration profiling found none, confirming source-side cleaning.
+- **Sub-1-minute durations excluded** — defensive filter for false starts / redock tests. Profiling found none.
+- **Durations ≥ 2 hours excluded** as probable docking failures or lost/abandoned bikes. Justification: duration profiling showed 99.8% of trips fall under 2 hours, and the per-minute overage fee structure (fees begin at 30–45 min and accrue until the bike docks) makes genuinely longer single rides economically implausible. The excluded set is ~0.2% of trips.
+- Cleanup is applied only in the business-facing fact table; staging retains all rows, so the volume and rationale of removed trips can be reported transparently.
 
 **Limitations (stated honestly):**
 - The analysis identifies **candidate** demand hotspots and imbalances, not confirmed capacity strain.
 - *Unmet* demand (riders who found no available bike or no open dock) is invisible in trip data.
-- A single month cannot reveal seasonality; conclusions are snapshot-specific.
+- A single month cannot reveal seasonality; conclusions are snapshot-specific. (Additional months may be backfilled in a later phase to enable seasonal comparison.)
+- Trip distance is computed as straight-line (Haversine) distance between start and end coordinates; it is used as a descriptive analytical feature only, not as a validity filter, since it cannot capture actual ride paths or round trips.
 
 ---
 
@@ -142,7 +151,13 @@ Station-pairs form a **route** dimension for corridor analysis. Station capacity
 
 ---
 
+## Deliverables
+
+- **A tested dbt transformation pipeline** (staging → intermediate → marts) modeling station demand, net-flow imbalance, routes, time patterns, and rider-type behavior.
+- **A network-performance dashboard** (Looker Studio) for diagnosing demand and imbalance across the station network.
+- **A written Findings & Recommendations summary** translating the analysis into operational recommendations for the Operations & Network Planning stakeholder — e.g. which stations are priority candidates for added capacity or rebalancing focus, and how member/casual demand patterns inform those decisions. This is the deliverable that turns the technical pipeline into actionable analysis.
+
 ## What This Project Informs
 
-- **Operations:** where to prioritize new stations, added dock capacity, and rebalancing effort — focused on stations with high demand relative to capacity and strong directional imbalance.
+- **Operations:** where to prioritize new stations, added dock capacity, and rebalancing effort — focused on stations with high demand relative to capacity and strong directional imbalance, and on diagnosing system-health/performance signals.
 - **Membership/Growth:** which stations and rider segments represent the strongest casual-to-member conversion opportunities.
