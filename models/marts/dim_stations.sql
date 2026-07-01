@@ -51,6 +51,31 @@ deduplicated as (
     from all_stations
     group by station_id
 
+),
+
+-- capacity from the GBFS feed (staged)
+capacity as (
+
+    select
+        station_id,
+        capacity
+    from {{ ref('stg_citibike__station_info') }}
+
+),
+
+-- enrich the trip-derived stations with capacity
+final as (
+
+    select
+        d.station_id,
+        d.station_name,
+        d.lat,
+        d.lng,
+        d.appearance_count,
+        c.capacity
+    from deduplicated d
+    left join capacity c on d.station_id = c.station_id
+
 )
 
-select * from deduplicated
+select * from final

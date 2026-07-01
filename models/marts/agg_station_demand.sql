@@ -23,6 +23,7 @@ combined as (
         s.station_name,
         s.lat,
         s.lng,
+        s.capacity,
 
         -- departures (coalesce nulls to 0 for one-directional stations)
         coalesce(d.departures, 0) as departures,
@@ -37,8 +38,24 @@ combined as (
         -- total demand (departures + arrivals)
         coalesce(d.departures, 0) + coalesce(a.arrivals, 0) as total_trips,
 
-        -- net flow (departures - arrivals): positive = net origin, negative = net destination
-        coalesce(d.departures, 0) - coalesce(a.arrivals, 0) as net_flow
+        -- net flow (arrivals - departures): positive = net accumulation (fills), negative = net drain (empties)
+        coalesce(a.arrivals, 0) - coalesce(d.departures, 0) as net_flow,
+
+        -- demand-to-capacity ratio: total trips per dock.
+        -- Null when capacity is unknown (unmatched or inactive stations).
+        round(
+            (coalesce(d.departures, 0) + coalesce(a.arrivals, 0)) / s.capacity,
+            1
+        ) as trips_per_dock,
+        
+        -- net-flow-to-capacity ratio: net accumulation per dock.
+        -- Positive = fills relative to size, negative = drains relative to size.
+        -- Null when capacity is unknown (unmatched or inactive stations).
+        round(
+            (coalesce(a.arrivals, 0) - coalesce(d.departures, 0)) / s.capacity,
+            1
+        ) as net_flow_per_dock
+
 
     from stations s
     left join departures d on s.station_id = d.station_id
