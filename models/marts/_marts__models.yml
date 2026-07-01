@@ -53,3 +53,81 @@ models:
         description: Representative station name.
         tests:
           - not_null
+          
+  - name: agg_station_demand
+    description: >
+      Per-station demand model. One row per station, with departures,
+      arrivals, total trips, and net flow (departures - arrivals), plus
+      rider-type splits. Net flow is the imbalance signal for rebalancing.
+    columns:
+      - name: station_id
+        description: Primary key — unique station identifier.
+        tests:
+          - unique
+          - not_null
+      - name: departures
+        description: Count of trips starting at this station.
+        tests:
+          - not_null
+      - name: arrivals
+        description: Count of trips ending at this station.
+        tests:
+          - not_null
+      - name: total_trips
+        description: Total demand (departures + arrivals).
+        tests:
+          - not_null
+      - name: net_flow
+        description: Departures minus arrivals. Positive = net origin, negative = net destination.
+        tests:
+          - not_null
+
+  - name: agg_demand_by_time
+    description: >
+      Demand by day-of-week, hour, and rider type. One row per
+      (day_of_week x trip_hour x is_weekend x user_type) combination.
+      Powers time-pattern and member-vs-casual analysis.
+    columns:
+      - name: trip_count
+        description: Number of trips in this time/rider-type slice.
+        tests:
+          - not_null
+      - name: user_type
+        description: Rider type — member or casual.
+        tests:
+          - not_null
+
+  - name: agg_routes
+    description: >
+      Station-to-station corridors. One row per (start_station, end_station)
+      pair, with trip counts and average duration/distance. Includes
+      round-trip pairs (start = end).
+    columns:
+      - name: trip_count
+        description: Number of trips on this route.
+        tests:
+          - not_null
+      - name: start_station_id
+        description: Route origin station id.
+        tests:
+          - not_null
+      - name: end_station_id
+        description: Route destination station id.
+        tests:
+          - not_null
+
+  - name: agg_daily_trips
+    description: >
+      Daily trip volume — one row per calendar date. Built as the project's
+      vertical-slice model; also used for the daily-volume dashboard view.
+      Reads from staging (pre-cleanup), so counts all trips.
+    columns:
+      - name: trip_date
+        description: Calendar date of trips.
+        tests:
+          - unique
+          - not_null
+      - name: trip_count
+        description: Number of trips on this date.
+        tests:
+          - not_null
