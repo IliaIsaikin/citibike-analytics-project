@@ -78,9 +78,20 @@ models:
         tests:
           - not_null
       - name: net_flow
-        description: Departures minus arrivals. Positive = net origin, negative = net destination.
+        description: Arrivals minus departures. Positive = net destination / net accumulation, negative = net origin / net drain.
         tests:
           - not_null
+      - name: capacity
+        description: Total dock capacity from the GBFS feed. Null for unmatched or inactive stations.
+        # no not_null test: capacity is legitimately null for ~64 unmatched/inactive stations
+      - name: trips_per_dock
+        description: >
+          Demand-to-capacity ratio (total_trips / capacity). Null where capacity
+          is unknown. Higher = more throughput pressure per dock.
+      - name: net_flow_per_dock
+        description: >
+          Net accumulation per dock (net_flow / capacity). Positive = fills
+          relative to size, negative = drains. Null where capacity is unknown.
 
   - name: agg_demand_by_time
     description: >

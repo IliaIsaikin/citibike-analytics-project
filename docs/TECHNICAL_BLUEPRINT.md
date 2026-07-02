@@ -18,7 +18,8 @@ STAGING  (clean, typed, 1:1 with source; materialized as views)
   stg_citibike__station_info ..... Phase 3
 
 INTERMEDIATE  (reusable reshaping / aggregation logic; views)
-  int_trips_enriched ............. add date parts + distance; apply validity cleanup
+  int_station_id_mapping ......... resolve corrupted/duplicate station_ids to a canonical id
+  int_trips_enriched ............. apply id mapping; add date parts + distance; apply validity cleanup
   int_station_departures ......... trips aggregated by START station
   int_station_arrivals ........... trips aggregated by END station
 
@@ -64,6 +65,45 @@ Built bottom-up so each model's dependencies exist before it. Materializations f
 
 **Notes:** keep a comment documenting the cutoff rationale (ties back to the brief).
 
+### 1a. `int_station_id_mapping` (intermediate, view)
+
+**Purpose:** Resolve corrupted/duplicate `station_id`s that appear in raw trip
+data under a shared `station_name`, so downstream models operate on a single
+canonical id per physical station.
+
+**Grain:** one row per distinct `station_id` seen in trip data.
+
+**Root cause:** raw trip data contains formatting artifacts (e.g. a dropped
+trailing zero, an appended `_`, a substituted digit) that split ~53 physical
+stations across two `station_id`s — one "real" id that matches the GBFS
+capacity feed, one corrupted "orphan" that doesn't. Unresolved, this
+fabricates large but fictitious net-flow imbalances (discovered via a station
+showing an apparent −8,719 net flow that was actually ≈ +60 once its two id
+halves were merged).
+
+**Logic:** for each `station_id`, check whether it matches `station_info`
+(ground truth) and whether it shares a `station_name` with another id. Merge
+only when a collision is confirmed *and* the two ids sit within 100m of each
+other (a safeguard against merging genuinely distinct, co-located stations
+that happen to share a name).
+
+**All id cases handled:**
+
+| Name-twin? | Matched to capacity feed | Distance | Outcome |
+|---|---|---|---|
+| No | 1 (matched) | — | Normal case — id maps to itself |
+| No | 0 (unmatched) | — | Station absent from current capacity snapshot (e.g. closed/not-yet-opened) — id maps to itself, capacity stays NULL |
+| Yes | 1 matched, 1 orphan | ≤100m | Merge — orphan resolves to the matched id (the core bug) |
+| Yes | 1 matched, 1 orphan | >100m | No merge — each id maps to itself |
+| Yes | 0 matched, 2+ ids | same spot | Merge — canonical id picked by trip volume |
+| Yes | 0 matched, 2+ ids | not same spot | No merge — each id maps to itself |
+| Yes | 2+ matched | — | No merge — these are real, distinct stations |
+
+**Result on May 2026 data:** 53 of 2,344 raw station_ids resolved to a
+sibling id; 1 name-collision (two co-located, independently-capacitied
+stations) correctly left unmerged. `dim_stations` grain drops to 2,291;
+capacity match rate improves from 97.3% to 99.5%.
+
 ### 2. `fct_trips` (mart, table)
 
 **Purpose:** The clean, business-facing trip fact table — the canonical "one row per valid trip" that the dashboard and rider-behavior analyses use.
@@ -84,7 +124,7 @@ Built bottom-up so each model's dependencies exist before it. Materializations f
 **Grain:** one row per unique station.
 
 **Logic:**
-- Derive the distinct set of stations from `stg_citibike__trips`, combining **both** start and end station appearances (a station may appear only as an origin or only as a destination).
+- Derive the distinct set of stations from `int_trips_enriched` (post id-mapping), combining **both** start and end station appearances (a station may appear only as an origin or only as a destination).
 - For each `station_id`: pick a representative `station_name`, `lat`, `lng` (stations occasionally have tiny coordinate variations across trips; take one consistent value, e.g. via a deduplication pattern).
 - Exclude null station ids.
 

@@ -95,7 +95,7 @@ Station-pairs form a **route** dimension for corridor analysis. Station capacity
 
 ## Data Sources
 
-1. **Citi Bike trip data (loaded)** — June 2026 monthly trip CSVs from the official Citi Bike System Data release, loaded into BigQuery (`citibike_raw.trips`, ~4.69M rows). New-format schema: ride_id, rideable_type, started_at, ended_at, start/end station id & name, start/end lat/lng, member_casual. NYC trips only (Jersey City "JC" files excluded).
+1. **Citi Bike trip data (loaded)** — May 2026 monthly trip CSVs from the official Citi Bike System Data release, loaded into BigQuery (`citibike_raw.trips`, ~4.69M rows). New-format schema: ride_id, rideable_type, started_at, ended_at, start/end station id & name, start/end lat/lng, member_casual. NYC trips only (Jersey City "JC" files excluded).
 
 2. **Citi Bike GBFS `station_information` feed (to be added)** — the live public feed at `https://gbfs.citibikenyc.com/gbfs/en/station_information.json`, providing each station's **capacity** (total docks), name, and coordinates. No authentication required. Used to compute the trips-per-dock ratio.
 
@@ -126,6 +126,7 @@ Station-pairs form a **route** dimension for corridor analysis. Station capacity
 - *Unmet* demand (riders who found no available bike or no open dock) is invisible in trip data.
 - A single month cannot reveal seasonality; conclusions are snapshot-specific. (Additional months may be backfilled in a later phase to enable seasonal comparison.)
 - Trip distance is computed as straight-line (Haversine) distance between start and end coordinates; it is used as a descriptive analytical feature only, not as a validity filter, since it cannot capture actual ride paths or round trips.
+- **Station identity required resolution before analysis.** Profiling revealed that ~53 of the raw dataset's distinct station_id values were corrupted duplicates — formatting artifacts (e.g. a dropped trailing zero, an appended character) that split a single physical station across two ids in the raw trip data. Left unresolved, this would fabricate large but fictitious net-flow imbalances at affected stations. Ids were reconciled using the station capacity feed as ground truth, with a coordinate-distance safeguard to avoid incorrectly merging genuinely distinct stations that happen to share a name. See TECHNICAL_BLUEPRINT.md for the full resolution logic. All net-flow and demand figures in this analysis reflect corrected station identities.
 
 ---
 

@@ -51,7 +51,9 @@ The project follows a layered dbt structure:
   stations) to NULL to keep the raw signal honest and avoid divide-by-zero downstream.
 
 **Intermediate** (`models/intermediate/`) — reusable business logic:
-- `int_trips_enriched` — applies trip-validity cleanup and derives features
+- `int_station_id_mapping` — resolves corrupted/duplicate station_ids in raw trip data (formatting artifacts) 
+  to a single canonical id per physical station, using the capacity feed as ground truth.
+- `int_trips_enriched` — applies station_id resolution and trip-validity cleanup, and derives features 
   (trip date/hour, weekend flag, round-trip flag, Haversine distance).
 - `int_station_departures` / `int_station_arrivals` — per-station trip counts with
   member/casual splits.
@@ -83,8 +85,8 @@ A few deliberate choices, documented in [`docs/`](docs/):
 - **Haversine distance** is treated as a descriptive feature, not a validity
   filter (it can't capture round trips or actual routes).
 - **Capacity join key:** the GBFS feed's `short_name` (not its internal
-  `station_id`) matches the trip data's station id — verified by inspection,
-  achieving a 97.3% station match rate.
+  `station_id`) matches the trip data's station id — verified by inspection, achieving a 99.5% station match rate 
+  after resolving ~53 corrupted duplicate station_ids in the raw trip data (see int_station_id_mapping).
 - **Raw layer preserves all rows;** cleanup and derivation happen in dbt, keeping
   the pipeline auditable.
 
