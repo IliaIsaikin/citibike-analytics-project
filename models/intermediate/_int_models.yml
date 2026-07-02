@@ -1,0 +1,28 @@
+models:
+  - name: int_station_id_mapping
+    description: >
+      Resolves corrupted/duplicate station_ids that share a station_name
+      in raw trip data (formatting artifacts like trailing-zero drops or
+      appended underscores) down to a single canonical id, using the
+      station_info capacity feed as ground truth and a 100m distance
+      guard to avoid merging genuinely distinct stations that happen to
+      share a name. Grain: one row per distinct station_id seen in trip
+      data.
+    columns:
+      - name: station_id
+        description: Raw station_id as it appears in trip data.
+        tests:
+          - unique
+          - not_null
+
+      - name: station_name
+        tests:
+          - not_null
+
+      - name: canonical_station_id
+        description: >
+          The id this station_id should be treated as downstream. Equal
+          to station_id itself unless this id was identified as a
+          corrupted duplicate of another id under the same station_name.
+        tests:
+          - not_null

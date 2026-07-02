@@ -1,6 +1,15 @@
 with trips as (
 
-    select * from {{ ref('stg_citibike__trips') }}
+    select
+        t.* except (start_station_id, end_station_id),
+        coalesce(start_map.canonical_station_id, t.start_station_id) as start_station_id,
+        coalesce(end_map.canonical_station_id, t.end_station_id) as end_station_id
+
+    from {{ ref('stg_citibike__trips') }} t
+    left join {{ ref('int_station_id_mapping') }} start_map
+        on t.start_station_id = start_map.station_id
+    left join {{ ref('int_station_id_mapping') }} end_map
+        on t.end_station_id = end_map.station_id
 
 ),
 
@@ -30,6 +39,10 @@ enriched as (
         extract(dayofweek from started_at) in (1, 7) as is_weekend,
 
         -- round trip: started and ended at the same station
+        -- (uses canonical start/end station_id, so a trip that started
+        -- and ended at the same physical station is correctly detected
+        -- as round-trip even if the raw data recorded it under two
+        -- different corrupted id variants)
         start_station_id = end_station_id as is_round_trip,
 
         -- straight-line distance between start and end (descriptive feature)
