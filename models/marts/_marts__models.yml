@@ -57,8 +57,9 @@ models:
   - name: agg_station_demand
     description: >
       Per-station demand model. One row per station, with departures,
-      arrivals, total trips, and net flow (departures - arrivals), plus
-      rider-type splits. Net flow is the imbalance signal for rebalancing.
+      arrivals, station activity, and net flow (arrivals - departures),
+      plus daily-average and capacity-normalized variants, and rider-type
+      splits. Net flow is the imbalance signal for rebalancing.
     columns:
       - name: station_id
         description: Primary key — unique station identifier.
@@ -73,25 +74,75 @@ models:
         description: Count of trips ending at this station.
         tests:
           - not_null
-      - name: total_trips
-        description: Total demand (departures + arrivals).
+      - name: total_station_activity
+        description: >
+          Departures + arrivals at this station (dock-level activity in
+          either direction, over the full loaded window). NOT a trip
+          count — each trip contributes one departure at its start
+          station and one arrival at its end station, so summing this
+          column across stations double-counts every trip. Use
+          fct_trips for network-wide trip counts. Correct measure for
+          station-level capacity/strain, since dock stress comes from
+          both departures (bike availability) and arrivals (dock
+          availability).
         tests:
           - not_null
       - name: net_flow
-        description: Arrivals minus departures. Positive = net destination / net accumulation, negative = net origin / net drain.
+        description: >
+          Arrivals minus departures. Positive = net destination / net
+          accumulation, negative = net origin / net drain.
         tests:
           - not_null
       - name: capacity
         description: Total dock capacity from the GBFS feed. Null for unmatched or inactive stations.
-        # no not_null test: capacity is legitimately null for ~64 unmatched/inactive stations
+        # no not_null test: capacity is legitimately null for ~11 unmatched/inactive stations
       - name: trips_per_dock
         description: >
-          Demand-to-capacity ratio (total_trips / capacity). Null where capacity
-          is unknown. Higher = more throughput pressure per dock.
+          Demand-to-capacity ratio (total_station_activity / capacity).
+          Null where capacity is unknown. Higher = more throughput
+          pressure per dock.
       - name: net_flow_per_dock
         description: >
           Net accumulation per dock (net_flow / capacity). Positive = fills
           relative to size, negative = drains. Null where capacity is unknown.
+      - name: n_days
+        description: >
+          Number of distinct trip dates in the currently loaded window.
+          Computed dynamically so avg_daily_* metrics stay correct in
+          meaning as more months are backfilled. Equals 1 for a
+          single-day load, ~30 for one month, etc.
+        tests:
+          - not_null
+      - name: avg_daily_station_activity
+        description: >
+          total_station_activity divided by n_days — average daily dock
+          activity at this station. Preferred over total_station_activity
+          for interpretability and for comparability across differently
+          sized data windows (e.g. one month vs. several backfilled
+          months). Same cross-station summing caveat applies.
+        tests:
+          - not_null
+      - name: avg_daily_net_flow
+        description: >
+          net_flow divided by n_days — average net bikes gained (positive)
+          or lost (negative) per day at this station. The headline
+          rebalancing-urgency metric: directly answers "how many bikes a
+          day does this station need moved in or out."
+        tests:
+          - not_null
+      - name: avg_daily_trips_per_dock
+        description: >
+          Daily station activity per dock (total_station_activity /
+          capacity / n_days), computed independently from trips_per_dock
+          rather than dividing it, to avoid compounding rounding error.
+          Null where capacity is unknown.
+      - name: avg_daily_net_flow_per_dock
+        description: >
+          Daily net accumulation/drain per dock (net_flow / capacity /
+          n_days). The recommended metric for flagging stations that
+          drain or accumulate too much relative to their size — a
+          distribution/threshold analysis on this column is planned for
+          the Findings write-up. Null where capacity is unknown.
 
   - name: agg_demand_by_time
     description: >
