@@ -143,6 +143,41 @@ models:
           drain or accumulate too much relative to their size — a
           distribution/threshold analysis on this column is planned for
           the Findings write-up. Null where capacity is unknown.
+      - name: avg_daily_net_flow_pct
+        description: >
+          avg_daily_net_flow_per_dock expressed as a percentage — the
+          percent of the station's total capacity gained (positive) or
+          lost (negative) per day on average. E.g. 40.0 means the
+          station gains bikes equal to 40% of its capacity per day.
+      - name: days_to_fill_or_drain
+        description: >
+          Rough estimate of days for this station to go from empty to
+          full (if avg_daily_net_flow is positive) or full to empty (if
+          negative), at the station's current average daily net flow
+          rate. Unsigned — pair with the sign of avg_daily_net_flow to
+          determine direction. Assumes a constant daily rate and no
+          rebalancing intervention; an operational estimate, not a
+          guaranteed timeline. Null when net flow is ~0 or capacity is
+          unknown.
+      - name: peak_daily_accumulation
+        description: >
+          The single largest one-day net_flow (most positive) this
+          station experienced in the loaded window — the worst single
+          day of filling. Can reveal risk a chronic monthly average
+          hides (a station balanced on average may still have had one
+          brutal accumulation day).
+      - name: peak_daily_drain
+        description: >
+          The single most negative one-day net_flow this station
+          experienced — the worst single day of draining.
+      - name: peak_daily_accumulation_per_dock
+        description: >
+          peak_daily_accumulation relative to capacity. Null where
+          capacity is unknown.
+      - name: peak_daily_drain_per_dock
+        description: >
+          peak_daily_drain relative to capacity. Null where capacity is
+          unknown.
 
   - name: agg_demand_by_time
     description: >

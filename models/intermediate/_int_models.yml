@@ -26,3 +26,19 @@ models:
           corrupted duplicate of another id under the same station_name.
         tests:
           - not_null
+  
+  - name: int_station_daily_net_flow
+    description: >
+      Station-day grain net flow (arrivals - departures per station per
+      day). Feeds peak_daily_accumulation / peak_daily_drain in
+      agg_station_demand.
+    columns:
+      - name: station_id
+        tests:
+          - not_null
+      - name: trip_date
+        tests:
+          - not_null
+      - name: net_flow
+        tests:
+          - not_null
