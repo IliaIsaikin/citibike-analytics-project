@@ -66,6 +66,12 @@ models:
         tests:
           - unique
           - not_null
+      - name: borough
+        description: >
+          NYC borough this station falls within, assigned via
+          point-in-polygon containment against county boundaries. Null
+          only in the rare case a station's coordinates fall outside
+          all five borough polygons.
       - name: departures
         description: Count of trips starting at this station.
         tests:

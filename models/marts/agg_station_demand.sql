@@ -4,6 +4,12 @@ with stations as (
 
 ),
 
+boroughs as (
+
+    select * from {{ ref('int_station_borough') }}
+
+),
+
 departures as (
 
     select * from {{ ref('int_station_departures') }}
@@ -51,6 +57,7 @@ combined as (
         s.lat,
         s.lng,
         s.capacity,
+        b.borough,
 
         -- departures (coalesce nulls to 0 for one-directional stations)
         coalesce(d.departures, 0) as departures,
@@ -97,6 +104,7 @@ combined as (
     from stations s
     left join departures d on s.station_id = d.station_id
     left join arrivals a on s.station_id = a.station_id
+    left join boroughs b on s.station_id = b.station_id
 
 ),
 

@@ -1,0 +1,19 @@
+version: 2
+
+sources:
+  - name: geo
+    database: sincere-strata-500023-j8
+    schema: geo_raw
+    description: >
+      Static, one-time snapshot of NYC borough boundary geometries.
+      Sourced from BigQuery's public geo_us_boundaries dataset. No
+      refresh schedule -- county boundaries are effectively permanent,
+      unlike station_info which is periodically re-pulled from GBFS.
+    tables:
+      - name: nyc_county_boundaries
+        description: >
+          One row per NYC borough (5 rows total), with the borough name
+          and its boundary geometry (as GEOGRAPHY). Manhattan is stored
+          as a MULTIPOLYGON since it legally includes several small
+          islands (Randalls Island, Wards Island, Roosevelt Island)
+          that are physically separate from the main landmass.

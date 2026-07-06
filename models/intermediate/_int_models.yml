@@ -42,3 +42,23 @@ models:
       - name: net_flow
         tests:
           - not_null
+  
+  - name: int_station_borough
+    description: >
+      Assigns each station to its NYC borough via point-in-polygon
+      containment against official county boundaries. Grain: one row
+      per station in dim_stations with non-null coordinates.
+    columns:
+      - name: station_id
+        description: Foreign key to dim_stations.
+        tests:
+          - unique
+          - not_null
+      - name: borough
+        description: >
+          NYC borough the station falls within (Manhattan, Brooklyn,
+          Queens, Bronx, or Staten Island). Null only if a station's
+          coordinates somehow fall outside all five borough polygons
+          (should not occur post-JC/HB-cleanup; investigate if it does).
+        tests:
+          - not_null

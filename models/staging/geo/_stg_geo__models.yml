@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: stg_geo__nyc_counties
+    description: >
+      One-time static snapshot of NYC's five borough boundaries,
+      sourced from BigQuery's public geo_us_boundaries dataset. Not on
+      any refresh schedule -- county boundaries are effectively
+      permanent, unlike station_info which is periodically re-pulled
+      from GBFS.
+    columns:
+      - name: borough
+        description: >
+          NYC borough name (Manhattan, Brooklyn, Queens, Bronx, or
+          Staten Island), renamed from the source's NY State county
+          names (New York, Kings, Queens, Bronx, Richmond respectively).
+        tests:
+          - unique
+          - not_null
+      - name: county_geom
+        description: >
+          Borough boundary as a GEOGRAPHY value. Manhattan is stored as
+          a MULTIPOLYGON (it legally includes several small islands
+          physically separate from the main landmass).
+        tests:
+          - not_null
