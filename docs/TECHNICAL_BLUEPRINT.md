@@ -37,6 +37,7 @@ MARTS  (business-facing; materialized as tables)
 - **Star schema** (`fct_trips` + `dim_stations`) for the trip grain, which the dashboard joins for filtering and mapping.
 - **Pre-aggregated marts** (`agg_*`) so the dashboard reads ready-shaped data rather than running heavy queries.
 - Models are **month-agnostic** — adding more months later requires no model changes, just more data in the source.
+- Geographic scope (NYC-originating trips) is enforced in int_trips_enriched by nulling out-of-network endpoints, not in staging — same layer and rationale as duration-based validity cleanup.
 
 ---
 
@@ -62,6 +63,7 @@ Built bottom-up so each model's dependencies exist before it. Materializations f
   - `day_of_week` (name or number)
   - `is_weekend` (boolean)
 - **Add `trip_distance_km`** — straight-line Haversine distance from start/end lat/lng, using the `dbt_utils.haversine_distance` macro. Descriptive feature only.
+- **Null out any Jersey City / Hoboken endpoint** (start_station_id/end_station_id prefixed JC/HB, plus their name/lat/lng): these stations are outside the documented NYC network scope. Trips are retained (not dropped) since most are legitimate NYC-origin departures — only the out-of-network endpoint is treated as unknown, matching the existing dockless-ending convention. 
 
 **Notes:** keep a comment documenting the cutoff rationale (ties back to the brief).
 
@@ -221,7 +223,7 @@ Add data-quality tests to lock in correctness:
   - conservation check: network-wide departures ≈ arrivals
   - net_flow sums to ≈ 0
   - no trips in fct_trips with duration ≥ 120 min or < 1 min (cleanup enforcement)
-- Add `dbt_utils` tests where useful (e.g. accepted range on duration).
+  - assert_no_out_of_scope_stations.sql — fails if any Jersey City/Hoboken station id ever appears in fct_trips.
 
 ---
 
