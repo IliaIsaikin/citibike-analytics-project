@@ -26,7 +26,7 @@ INTERMEDIATE  (reusable reshaping / aggregation logic; views)
 MARTS  (business-facing; materialized as tables)
   dim_stations ................... one row per station (+ capacity in Phase 3)
   fct_trips ...................... clean trip-grain fact table
-  agg_station_demand ............. per-station demand, net flow, (trips-per-dock in Phase 3)
+  agg_station_demand ............. per-station demand, net flow, (activity-per-dock in Phase 3)
   agg_demand_by_time ............. demand by hour/day, split by rider type
   agg_routes ..................... top station-to-station corridors
 ```
@@ -156,7 +156,7 @@ capacity match rate improves from 97.3% to 99.5%.
 
 ### 6. `agg_station_demand` (mart, table)
 
-**Purpose:** The core network-demand model — per-station departures, arrivals, total demand, and **net flow** (the imbalance signal). Trips-per-dock is added in Phase 3.
+**Purpose:** The core network-demand model — per-station departures, arrivals, total demand, and **net flow** (the imbalance signal). Activity-per-dock is added in Phase 3.
 
 **Grain:** one row per station.
 
@@ -165,8 +165,8 @@ capacity match rate improves from 97.3% to 99.5%.
 - Left join `int_station_departures` and `int_station_arrivals` on `station_id`.
 - Coalesce nulls to 0 (a station with no arrivals should show 0, not null).
 - Compute:
-  - `total_trips` = departures + arrivals
-  - `net_flow` = departures − arrivals (positive = net origin / bikes leave; negative = net destination / bikes pile up)
+  - `total_station_activity` = departures + arrivals
+  - `net_flow` =  arrivals - departures (positive = net destination / bikes pile up; negative = net origin / bikes leave)
 - Carry station name + coordinates for mapping.
 
 **Validation hook:** network-wide `SUM(departures)` should ≈ `SUM(arrivals)`, and `SUM(net_flow)` ≈ 0 (conservation checks — implemented as singular tests in Phase 2).
@@ -232,7 +232,7 @@ Add data-quality tests to lock in correctness:
 - **Python ingestion script**: pull `station_information.json` from the GBFS feed (`requests`), parse to a table (`pandas`), load to BigQuery (`google-cloud-bigquery`) as `citibike_raw.station_info`.
 - `stg_citibike__station_info` — stage/type the capacity data.
 - Enrich `dim_stations` with `capacity` (join on station_id).
-- Add `trips_per_dock` = total_trips / capacity to `agg_station_demand` — the demand-to-capacity headline metric.
+- Add `activity_per_dock` = total_activity / capacity to `agg_station_demand` — the demand-to-capacity headline metric.
 - Handle stations present in trips but missing from the feed (and vice versa) gracefully.
 
 ---
@@ -240,7 +240,7 @@ Add data-quality tests to lock in correctness:
 ## PHASE 4 — Looker Studio Dashboard (high-level sketch)
 
 Connect Looker Studio to the marts. Planned views:
-- **Demand map** — stations plotted by lat/lng, sized/colored by total demand (and trips-per-dock in Phase 3).
+- **Demand map** — stations plotted by lat/lng, sized/colored by total demand (and activity-per-dock in Phase 3).
 - **Net-flow / imbalance view** — stations by net_flow (net origins vs. destinations).
 - **Time patterns** — demand by hour/day, split by rider type.
 - **Member vs. casual** — behavioral comparison (duration, timing, casual-heavy stations).
@@ -251,7 +251,7 @@ Connect Looker Studio to the marts. Planned views:
 ## PHASE 5 — Findings & Recommendations (high-level sketch)
 
 A written deliverable translating the analysis into operational recommendations for the Operations & Network Planning stakeholder:
-- Priority stations for added capacity (high demand / high trips-per-dock).
+- Priority stations for added capacity (high demand / high activity-per-dock).
 - Priority stations/corridors for rebalancing (strong net-flow imbalance).
 - How member vs. casual demand patterns inform planning and conversion.
 - Stated limitations (candidate signals, not confirmed strain; single-month snapshot).

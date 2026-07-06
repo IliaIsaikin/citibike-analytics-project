@@ -44,7 +44,7 @@ Network & demand:
 - Which stations have the highest trip volume (as origin, as destination, and total)?
 - Which station-to-station routes (corridors) are most popular?
 - Which stations show the greatest directional imbalance (net origins vs. net destinations)?
-- Where is demand highest **relative to dock capacity** (trips per dock)?
+- Where is demand highest **relative to dock capacity** (activity per dock)?
 - How does demand shift by hour of day and day of week?
 
 Rider behavior:
@@ -58,10 +58,10 @@ Rider behavior:
 ## Key Metrics
 
 **Demand & network:**
-- Trips per station — as origin, as destination, and total
+- Activity per station — as origin, as destination, and total
 - Net flow per station (departures − arrivals) — the imbalance signal
 - Top N station-to-station routes by trip count
-- **Trips per dock (demand-to-capacity ratio)** — headline normalized metric
+- **Activity per dock (demand-to-capacity ratio)** — headline normalized metric
 - Demand by hour-of-day and day-of-week, per station / zone
 - Trip volume by geographic area (lat/lng based)
 
@@ -70,7 +70,7 @@ Rider behavior:
 - Average / median trip duration by rider type
 - Trips by hour-of-day and day-of-week, split by rider type
 - Weekend vs. weekday ratio by rider type
-- Casual share of trips per station (casual-heavy station identification)
+- Casual share of activity per station (casual-heavy station identification)
 - Electric vs. classic bike mix by rider type
 
 **Validation / integrity metrics:**
@@ -84,8 +84,8 @@ Rider behavior:
 
 The grain of the raw data is a **single trip**. Each trip carries a rider type, start/end timestamp, start/end station (id, name, lat/lng), and bike type.
 
-The analysis aggregates trips along three dimensions:
-- **Station** (the analytical spine): trips are rolled up by start station and by end station, then combined to compute net flow and joined to capacity for trips-per-dock.
+The analysis aggregates trips/activity along three dimensions:
+- **Station** (the analytical spine): trips are rolled up by start station and by end station, then combined to compute net flow and joined to capacity for activity-per-dock.
 - **Time**: hour-of-day and day-of-week breakdowns reveal demand rhythms and directional rush-hour flows.
 - **Rider type**: every demand view can be split by member vs. casual.
 
@@ -97,7 +97,7 @@ Station-pairs form a **route** dimension for corridor analysis. Station capacity
 
 1. **Citi Bike trip data (loaded)** — May 2026 monthly trip CSVs from the official Citi Bike System Data release, loaded into BigQuery (`citibike_raw.trips`, ~4.69M rows). New-format schema: ride_id, rideable_type, started_at, ended_at, start/end station id & name, start/end lat/lng, member_casual. NYC-originating trips only (the Jersey City origin file is excluded at ingestion); a small number of NYC-origin trips end at a Hoboken/Jersey City station (309 trips, ~0.0066%) — these are retained, with the out-of-network endpoint treated as unknown, consistent with dockless-ending handling. See TECHNICAL_BLUEPRINT.md.
 
-2. **Citi Bike GBFS `station_information` feed (to be added)** — the live public feed at `https://gbfs.citibikenyc.com/gbfs/en/station_information.json`, providing each station's **capacity** (total docks), name, and coordinates. No authentication required. Used to compute the trips-per-dock ratio.
+2. **Citi Bike GBFS `station_information` feed (to be added)** — the live public feed at `https://gbfs.citibikenyc.com/gbfs/en/station_information.json`, providing each station's **capacity** (total docks), name, and coordinates. No authentication required. Used to compute the activity-per-dock ratio.
 
 ---
 

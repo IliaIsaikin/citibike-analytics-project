@@ -102,9 +102,12 @@ models:
       - name: capacity
         description: Total dock capacity from the GBFS feed. Null for unmatched or inactive stations.
         # no not_null test: capacity is legitimately null for ~11 unmatched/inactive stations
-      - name: trips_per_dock
+      - name: activity_per_dock
         description: >
           Demand-to-capacity ratio (total_station_activity / capacity).
+          Renamed from trips_per_dock: this measures dock-level activity
+          (departures + arrivals), NOT a count of distinct trips -- see
+          total_station_activity for the double-counting rationale.
           Null where capacity is unknown. Higher = more throughput
           pressure per dock.
       - name: net_flow_per_dock
@@ -136,12 +139,13 @@ models:
           day does this station need moved in or out."
         tests:
           - not_null
-      - name: avg_daily_trips_per_dock
+      - name: avg_daily_activity_per_dock
         description: >
-          Daily station activity per dock (total_station_activity /
-          capacity / n_days), computed independently from trips_per_dock
-          rather than dividing it, to avoid compounding rounding error.
-          Null where capacity is unknown.
+          Daily activity per dock (total_station_activity / capacity /
+          n_days). Renamed from avg_daily_trips_per_dock for the same
+          reason as activity_per_dock. Computed independently from
+          activity_per_dock rather than dividing it, to avoid
+          compounding rounding error. Null where capacity is unknown.
       - name: avg_daily_net_flow_per_dock
         description: >
           Daily net accumulation/drain per dock (net_flow / capacity /

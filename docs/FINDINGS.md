@@ -62,7 +62,7 @@ rate improved from 97.3% to 99.5% as a direct result.
 
 Volume alone does not indicate strain — a busy station with ample
 capacity is not a problem; a moderately busy station with few docks can
-be. [Scatter analysis of daily station activity vs. daily trips-per-dock
+be. [Scatter analysis of daily station activity vs. daily activity-per-dock
 to be inserted here once the dashboard component is finalized, including
 specific candidate stations for capacity expansion.]
 
@@ -145,7 +145,7 @@ comptroller.nyc.gov, "Riding Forward," Nov 2023.)*
 
 1. **Prioritize capacity review at the intersection of Findings 1 and
    3** — small-capacity stations with disproportionate daily
-   trips-per-dock are the most capital-efficient expansion candidates.
+   activity-per-dock are the most capital-efficient expansion candidates.
    [Quantified "docks needed to de-risk" table pending.]
 2. **Adopt a ±10% daily net-flow-per-capacity threshold** as a
    standing monitoring metric for the rebalancing team, informed by the

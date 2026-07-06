@@ -62,7 +62,7 @@ The project follows a layered dbt structure:
 - `fct_trips` — clean trip fact table (grain: one row per trip).
 - `dim_stations` — station dimension enriched with dock capacity from the GBFS feed.
 - `agg_station_demand` — per-station departures, arrivals, net flow, and
-  capacity-normalized metrics (`trips_per_dock`, `net_flow_per_dock`).
+  capacity-normalized metrics (`activity_per_dock`, `net_flow_per_dock`).
 - `agg_demand_by_time` — demand by day-of-week, hour, and rider type.
 - `agg_routes` — station-to-station corridors.
 - `agg_daily_trips` — daily trip volume.
@@ -72,7 +72,7 @@ The project follows a layered dbt structure:
 | Metric | Definition | Operational meaning |
 |---|---|---|
 | `net_flow` | arrivals − departures | Positive = station fills (net destination); negative = station drains (net origin). Signals rebalancing need. |
-| `trips_per_dock` | total trips / capacity | Throughput pressure per dock. Distinguishes busy-but-large from busy-and-small stations. |
+| `activity_per_dock` | total activity / capacity | Throughput pressure per dock. Distinguishes busy-but-large from busy-and-small stations. |
 | `net_flow_per_dock` | net flow / capacity | Imbalance severity relative to station size — a −45 net flow is far more acute at a 20-dock station than a 100-dock one. |
 
 ## Data Modeling Decisions

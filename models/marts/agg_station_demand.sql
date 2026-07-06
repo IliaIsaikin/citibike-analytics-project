@@ -91,7 +91,7 @@ combined as (
         round(
             (coalesce(d.departures, 0) + coalesce(a.arrivals, 0)) / s.capacity,
             1
-        ) as trips_per_dock,
+        ) as activity_per_dock,
 
         -- net-flow-to-capacity ratio: net accumulation per dock.
         -- Positive = fills relative to size, negative = drains relative to size.
@@ -127,14 +127,14 @@ final as (
         -- negative = station drains roughly this many bikes/day.
         round(c.net_flow / n.n_days, 1) as avg_daily_net_flow,
 
-        -- avg_daily_trips_per_dock: daily throughput relative to station
+        -- avg_daily_activity_per_dock: daily throughput relative to station
         -- size. Derived independently from total_station_activity /
         -- capacity / n_days rather than dividing the already-rounded
-        -- trips_per_dock, to avoid compounding rounding error.
+        -- activity_per_dock, to avoid compounding rounding error.
         round(
             safe_divide(c.total_station_activity, c.capacity * n.n_days),
             2
-        ) as avg_daily_trips_per_dock,
+        ) as avg_daily_activity_per_dock,
 
         -- avg_daily_net_flow_per_dock: daily imbalance relative to
         -- station size. The recommended metric for flagging stations
