@@ -62,3 +62,69 @@ models:
           (should not occur post-JC/HB-cleanup; investigate if it does).
         tests:
           - not_null
+  
+  - name: int_station_daily_swing
+    description: >
+      One row per station-day. Reconstructs each station's intraday bike-count
+      trajectory from individual departure/arrival events in int_trips_enriched,
+      then computes day_swing — the full range (max minus min) the station's
+      cumulative bike count travels through that day, relative to an arbitrary
+      zero baseline at day-start. Because the swing is a range, not an absolute
+      level, it is independent of the (unknown) actual midnight occupancy. 
+      Used as the foundation for intraday imbalance metrics and the donor/recipient safety
+      constraints.
+    columns:
+      - name: station_id
+        description: Canonical station identifier (post id-mapping fix).
+        tests:
+          - not_null
+      - name: event_date
+        description: Calendar date (station-local) the swing was observed on.
+        tests:
+          - not_null
+      - name: day_swing
+        description: >
+          MAX(cumulative_net) - MIN(cumulative_net) for the station on this
+          date. Always >= 0 by construction. Represents the minimum dock
+          capacity required for the station to avoid running empty or full
+          at some point during the day, independent of starting occupancy.
+        tests:
+          - not_null
+  
+  - name: int_station_swing_stats
+    description: >
+      One row per station. Aggregates int_station_daily_swing across the full
+      observation window into station-level swing statistics: the single
+      worst day (max_daily_swing) and the typical day (avg_daily_swing).
+      avg_daily_swing feeds agg_station_demand's avg_daily_swing_to_capacity_pct,
+      the chronic intraday-imbalance metric. max_daily_swing is
+      retained for reference/diagnostic use but is deliberately NOT used as a
+      chronic-imbalance trigger, since a single worst day reflects a
+      peak event rather than a chronic condition.
+    columns:
+      - name: station_id
+        description: Canonical station identifier (post id-mapping fix).
+        tests:
+          - not_null
+          - unique
+      - name: max_daily_swing
+        description: >
+          The single worst (largest) day_swing observed for this station
+          across the observation window. Diagnostic/reference only — not
+          used in the chronic swing-ratio metric.
+        tests:
+          - not_null
+      - name: avg_daily_swing
+        description: >
+          Mean day_swing across all observed days for this station. Feeds
+          agg_station_demand.avg_daily_swing_to_capacity_pct.
+        tests:
+          - not_null
+      - name: days_observed
+        description: >
+          Count of distinct dates with at least one departure/arrival event
+          for this station. Sanity-check column to confirm each station has
+          a full observation window (~n_days_in_window); not surfaced on the
+          dashboard.
+        tests:
+          - not_null

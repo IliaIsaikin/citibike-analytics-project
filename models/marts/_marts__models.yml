@@ -188,6 +188,26 @@ models:
         description: >
           peak_daily_drain relative to capacity. Null where capacity is
           unknown.
+      - name: max_daily_swing
+        description: >
+          The single worst (largest) intraday bike-count range observed for
+          this station across the observation window, from
+          int_station_swing_stats. Diagnostic/reference only — not used in
+          Tier 2's chronic swing-ratio metric, since a single worst day
+          reflects a peak event rather than a chronic condition.
+      - name: avg_daily_swing
+        description: >
+          Mean intraday bike-count range across all observed days for this
+          station, from int_station_swing_stats. Feeds
+          avg_daily_swing_to_capacity_pct.
+      - name: avg_daily_swing_to_capacity_pct
+        description: >
+          avg_daily_swing expressed as a percentage of station capacity —
+          Tier 2's primary chronic intraday-imbalance metric, structurally
+          the one-sided analog of avg_daily_net_flow_pct. Unlike net-flow-pct,
+          always >= 0 and can exceed 100% (redistribution-driven arrivals
+          beyond a simple drain-then-refill cycle). Null when capacity is
+          unknown or the station has no observed activity.
 
   - name: agg_demand_by_time
     description: >
