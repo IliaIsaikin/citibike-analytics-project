@@ -49,6 +49,18 @@ daily_extremes as (
 
 ),
 
+-- Intraday swing stats per station: the range a station's bike count
+-- travels through in a day (see int_station_daily_swing / int_station_swing_stats
+-- for the derivation). avg_daily_swing is the chronic-imbalance signal
+-- (paired with capacity below); max_daily_swing is retained for
+-- reference/diagnostic use only — a single worst day is a peak-event signal,
+-- not a chronic one
+swing_stats as (
+
+    select * from {{ ref('int_station_swing_stats') }}
+
+),
+
 combined as (
 
     select
@@ -193,6 +205,30 @@ with_daily_extremes as (
     from with_readable_metrics w
     left join daily_extremes e on w.station_id = e.station_id
 
+),
+
+with_swing_metrics as (
+
+    select
+        w.*,
+        sw.max_daily_swing,
+        sw.avg_daily_swing,
+
+        -- avg_daily_swing_to_capacity_pct: the % of the station's total
+        -- capacity that its bike count typically travels through in a day.
+        -- This is Tier 2's primary chronic-imbalance metric — structurally
+        -- the intraday analog of avg_daily_net_flow_pct. Unlike net-flow-pct,
+        -- this ratio is one-sided (always >= 0, no drain/fill direction) and
+        -- can exceed 100% when redistribution efforts inject bikes beyond a
+        -- simple drain-then-refill cycle. Null when capacity is unknown.
+        round(
+            safe_divide(sw.avg_daily_swing, w.capacity) * 100,
+            1
+        ) as avg_daily_swing_to_capacity_pct
+
+    from with_daily_extremes w
+    left join swing_stats sw on w.station_id = sw.station_id
+
 )
 
-select * from with_daily_extremes
+select * from with_swing_metrics
